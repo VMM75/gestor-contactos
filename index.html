@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Contactos</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { User, Plus, Edit, Trash2, Search } = lucide;
+
+        const ContactManager = () => {
+            const [personas, setPersonas] = useState(() => {
+                const contactosGuardados = localStorage.getItem('contactos');
+                return contactosGuardados ? JSON.parse(contactosGuardados) : [];
+            });
+            
+            const [showForm, setShowForm] = useState(false);
+            const [editingPerson, setEditingPerson] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [nombre, setNombre] = useState('');
+            const [empresa, setEmpresa] = useState('');
+            const [puesto, setPuesto] = useState('');
+            const [telefono, setTelefono] = useState('');
+            const [email, setEmail] = useState('');
+            const [proyectos, setProyectos] = useState('');
+            const [comentarios, setComentarios] = useState('');
+
+            useEffect(() => {
+                localStorage.setItem('contactos', JSON.stringify(personas));
+            }, [personas]);
+
+            const handleSubmit = () => {
+                if (nombre.trim()) {
+                    if (editingPerson) {
+                        const personasActualizadas = personas.map(persona => 
+                            persona.id === editingPerson.id 
+                                ? { ...persona, nombre, empresa, puesto, telefono, email, proyectos, comentarios }
+                                : persona
+                        );
+                        setPersonas(personasActualizadas);
+                        setEditingPerson(null);
+                    } else {
+                        const nuevaPersona = {
+                            id: Date.now(),
+                            nombre, empresa, puesto, telefono, email, proyectos, comentarios
+                        };
+                        setPersonas([...personas, nuevaPersona]);
+                    }
+                    
+                    setNombre(''); setEmpresa(''); setPuesto(''); setTelefono('');
+                    setEmail(''); setProyectos(''); setComentarios(''); setShowForm(false);
+                }
+            };
+
+            const handleEdit = (persona) => {
+                setNombre(persona.nombre || '');
+                setEmpresa(persona.empresa || '');
+                setPuesto(persona.puesto || '');
+                setTelefono(persona.telefono || '');
+                setEmail(persona.email || '');
+                setProyectos(persona.proyectos || '');
+                setComentarios(persona.comentarios || '');
+                setEditingPerson(persona);
+                setShowForm(true);
+            };
+
+            const handleDelete = (id) => {
+                if (window.confirm('¿Estás seguro de que quieres eliminar esta persona?')) {
+                    setPersonas(personas.filter(persona => persona.id !== id));
+                }
+            };
+
+            const handleCancel = () => {
+                setShowForm(false); setEditingPerson(null);
+                setNombre(''); setEmpresa(''); setPuesto(''); setTelefono('');
+                setEmail(''); setProyectos(''); setComentarios('');
+            };
+
+            const cargarDatosExcel = () => {
+                const datosExcel = [
+                    {"nombre":"Juan Escoda Huget","empresa":"VARIA SAN MARCOS 21","puesto":"Representante Legal","telefono":"","email":"","proyectos":"Edificio de viviendas en calle San Marcos, 21. Madrid","comentarios":"Empresa: VARIA SAN MARCOS 21. NIF: B-80473317","id":Date.now()+1},
+                    {"nombre":"David Sagarra Riera","empresa":"TPC RESI 2016, S.L.","puesto":"Representante Legal","telefono":"","email":"","proyectos":"Edificio de viviendas en calle Marqués de portugalete, 16. Madrid","comentarios":"Empresa: TPC RESI 2016, S.L.. NIF: B-87636015","id":Date.now()+2},
+                    {"nombre":"Homero Garza Terán","empresa":"IBVEST SP ASSET 1, SL","puesto":"Representante Legal","telefono":"","email":"","proyectos":"Edificio de viviendas en calle Españoleto, 10. Madrid","comentarios":"Empresa: IBVEST SP ASSET 1, SL. NIF: B10823532","id":Date.now()+3},
+                    {"nombre":"FRANCISCO DE VEGA SOTO","empresa":"FRANCISCO DE VEGA SOTO","puesto":"Representante Legal","telefono":"","email":"","proyectos":"Vivienda unifamiliar en Valderrobres 42. Aravaca","comentarios":"Empresa: FRANCISCO DE VEGA SOTO. NIF: 00353866C","id":Date.now()+4},
+                    {"nombre":"Juan Manuel Ladrón de Guevara","empresa":"VILLABOR SC SOCIMI S.A.","puesto":"Representante Legal","telefono":"","email":"","proyectos":"Edificio de viviendas en calle Bravo Murillo, 122. Madrid","comentarios":"Empresa: VILLABOR SC SOCIMI S.A.. NIF: A-87808622","id":Date.now()+5},
+                    {"nombre":"Mario Luengo Rodríguez-Manzaneque","empresa":"COPAROMA 2000 S.L.","puesto":"Representante Legal","telefono":"","email":"","proyectos":"Edificio de viviendas en plaza Tirso de Molina. Madrid","comentarios":"Empresa: COPAROMA 2000 S.L.. NIF: B-82624302","id":Date.now()+6}
+                ];
+                
+                const nombresExistentes = personas.map(p => p.nombre.toLowerCase());
+                const contactosNuevos = datosExcel.filter(c => 
+                    !nombresExistentes.includes(c.nombre.toLowerCase())
+                );
+                
+                if (contactosNuevos.length > 0) {
+                    setPersonas([...personas, ...contactosNuevos]);
+                    alert(`✅ Cargados ${contactosNuevos.length} contactos nuevos`);
+                } else {
+                    alert('ℹ️ Todos estos contactos ya están en tu lista');
+                }
+            };
+
+            const exportToCSV = () => {
+                if (personas.length === 0) {
+                    alert('No hay contactos para exportar');
+                    return;
+                }
+                const headers = 'Nombre,Empresa,Puesto,Teléfono,Email,Proyectos,Comentarios\n';
+                const rows = personas.map(p => 
+                    `"${p.nombre || ''}","${p.empresa || ''}","${p.puesto || ''}","${p.telefono || ''}","${p.email || ''}","${p.proyectos || ''}","${p.comentarios || ''}"`
+                ).join('\n');
+                const csvContent = headers + rows;
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'contactos.csv';
+                link.click();
+            };
+
+            const filteredPersonas = personas.filter(person => {
+                if (!searchTerm) return true;
+                const term = searchTerm.toLowerCase();
+                return ['nombre', 'empresa', 'puesto', 'telefono', 'email', 'proyectos', 'comentarios']
+                    .some(field => person[field] && person[field].toLowerCase().includes(term));
+            });
+
+            return (
+                <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+                                <User className="mr-3 text-blue-600" />
+                                Gestor de Contactos
+                            </h1>
+                            <div className="text-sm text-gray-500">{personas.length} contactos</div>
+                        </div>
+
+                        <div className="mb-6">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar contactos..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-6 flex flex-wrap gap-4">
+                            <button
+                                onClick={() => setShowForm(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Agregar Persona
+                            </button>
+                            <button
+                                onClick={cargarDatosExcel}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            >
+                                📊 Cargar Datos del Excel
+                            </button>
+                            <button
+                                onClick={exportToCSV}
+                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                            >
+                                📥 Exportar CSV
+                            </button>
+                        </div>
+
+                        {showForm && (
+                            <div className="mb-6 bg-gray-50 p-6 rounded-lg border">
+                                <h2 className="text-xl font-semibold mb-4">
+                                    {editingPerson ? 'Editar Persona' : 'Nueva Persona'}
+                                </h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                                        <input
+                                            type="text"
+                                            value={nombre}
+                                            onChange={(e) => setNombre(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
+                                        <input
+                                            type="text"
+                                            value={empresa}
+                                            onChange={(e) => setEmpresa(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Puesto</label>
+                                        <input
+                                            type="text"
+                                            value={puesto}
+                                            onChange={(e) => setPuesto(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                        <input
+                                            type="text"
+                                            value={telefono}
+                                            onChange={(e) => setTelefono(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Proyectos</label>
+                                        <input
+                                            type="text"
+                                            value={proyectos}
+                                            onChange={(e) => setProyectos(e.target.value)}
+                                            placeholder="Separar múltiples proyectos con comas"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Comentarios</label>
+                                        <textarea
+                                            value={comentarios}
+                                            onChange={(e) => setComentarios(e.target.value)}
+                                            rows={3}
+                                            placeholder="Notas adicionales..."
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleSubmit}
+                                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        >
+                                            {editingPerson ? 'Actualizar' : 'Guardar'}
+                                        </button>
+                                        <button
+                                            onClick={handleCancel}
+                                            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                                Contactos ({filteredPersonas.length})
+                            </h2>
+                            
+                            {filteredPersonas.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    {personas.length === 0 ? 'No hay contactos guardados' : 'No se encontraron contactos'}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {filteredPersonas.map(person => (
+                                        <div key={person.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{person.nombre}</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600">
+                                                        {person.empresa && <div><strong>Empresa:</strong> {person.empresa}</div>}
+                                                        {person.puesto && <div><strong>Puesto:</strong> {person.puesto}</div>}
+                                                        {person.telefono && <div><strong>Teléfono:</strong> {person.telefono}</div>}
+                                                        {person.email && <div><strong>Email:</strong> {person.email}</div>}
+                                                    </div>
+                                                    {person.proyectos && (
+                                                        <div className="mt-2 text-sm">
+                                                            <strong className="text-gray-700">Proyectos:</strong>
+                                                            <span className="text-gray-600 ml-1">{person.proyectos}</span>
+                                                        </div>
+                                                    )}
+                                                    {person.comentarios && (
+                                                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                                            <strong className="text-gray-700">Comentarios:</strong>
+                                                            <span className="text-gray-600 ml-1">{person.comentarios}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-2 ml-4">
+                                                    <button
+                                                        onClick={() => handleEdit(person)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(person.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ContactManager />);
+    </script>
+</body>
+</html>
